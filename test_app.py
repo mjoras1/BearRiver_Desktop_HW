@@ -6,12 +6,32 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from app import (
+    BearRiverApp,
+    USGS_API,
     create_work_file,
     summarize_daily_series,
     validate_work_file,
     write_daily_csv,
     write_daily_excel,
 )
+
+
+class PaginationTests(unittest.TestCase):
+    def test_request_all_features_accepts_api_url_and_rejects_other_origins(self):
+        class RequestHarness:
+            def request_json(self, url, label):
+                return {"features": [{"id": "site-1"}]}
+
+        app = RequestHarness()
+        features = BearRiverApp.request_all_features(
+            app, USGS_API + "/collections/monitoring-locations/items", "test"
+        )
+
+        self.assertEqual(features, [{"id": "site-1"}])
+        with self.assertRaisesRegex(RuntimeError, "unexpected pagination link"):
+            BearRiverApp.request_all_features(
+                app, "https://example.com/collections/test/items", "test"
+            )
 
 
 class WorkFileTests(unittest.TestCase):

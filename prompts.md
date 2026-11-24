@@ -19,3 +19,19 @@
 5. **Request:** Add a Platform section to `spec.md`.  
    **Changes:** Documented the Windows desktop target, Python/Tkinter runtime, live-data internet requirement, and `openpyxl` requirement for Excel export.  
    **Outcome:** Section added; documentation-only change.
+
+6. **Request:** Fix the website map so it works.
+   **Changes:** Opened and checked `index.html` in a browser; no code change was needed.
+   **Outcome:** The Leaflet map initialized at 430 px high, displayed the HUC boundary and map tiles, and loaded 306 stations (20 current and displayed). The map worked in this browser test; if it is still failing on the user's device, the specific failure has not been reproduced.
+
+7. **Request:** The user reported that the app says it cannot load live basin data.
+   **Changes:** Initially inspected the shared browser page because it was the only shared page available; the Tkinter-specific failure was not yet identified.
+   **Outcome:** The browser version loaded 306 sites, but this did not validate the Tkinter app. The user's error remained unresolved at that point.
+
+8. **Request:** The user reported that the live-data issue was still occurring.
+   **Changes:** Re-inspected the shared browser tab, which was still not the failing Tkinter window.
+   **Outcome:** The browser version continued to load, but the actual Tkinter failure had not been reproduced.
+
+9. **Request:** Fix the live-basin error shown in the Tkinter screenshot.
+   **Changes:** Reproduced the exact `AttributeError` in `request_all_features`: `urllib.parse.urlparse()` returns a `ParseResult` without an `origin` attribute. Replaced that access with a scheme/netloc origin construction and added a regression test covering valid and off-origin URLs.
+   **Outcome:** All six `test_app.py` tests passed; `py_compile` passed. A live USGS monitoring-location request using the corrected pagination method loaded 817 features.

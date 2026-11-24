@@ -388,7 +388,8 @@ class BearRiverApp(tk.Tk):
         features = []
         visited = set()
         next_url = first_url
-        origin = urllib.parse.urlparse(USGS_API).origin
+        api_url = urllib.parse.urlparse(USGS_API)
+        origin = api_url.scheme + "://" + api_url.netloc
         while next_url:
             parsed = urllib.parse.urlparse(next_url)
             if len(visited) >= 100:
