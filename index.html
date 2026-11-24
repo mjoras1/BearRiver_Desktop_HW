@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173b32">
+  <title>Bear River Gage Explorer</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #20342f;
+      --muted: #6e7c75;
+      --line: #e2e8e2;
+      --paper: #ffffff;
+      --canvas: #f3f5f0;
+      --pine: #173b32;
+      --pine-soft: #e6efe9;
+      --water: #4a91a1;
+      --gold: #c8984d;
+      --shadow: 0 12px 32px rgba(32, 52, 47, .07);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      color: inherit;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 72px;
+      padding: 0 clamp(20px, 4vw, 56px);
+      color: #f5f8f5;
+      background: var(--pine);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: .88rem;
+      font-weight: 720;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      color: #dcebe1;
+      border: 1px solid rgba(255, 255, 255, .27);
+      border-radius: 11px;
+    }
+
+    .topbar-meta {
+      color: #ccdbd2;
+      font-size: .8rem;
+    }
+
+    .page {
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      padding: 34px clamp(16px, 4vw, 56px) 48px;
+    }
+
+    .intro {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin: 0 0 23px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #61776b;
+      font-size: .72rem;
+      font-weight: 750;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+      color: #1d302b;
+      font-size: clamp(1.7rem, 3vw, 2.45rem);
+      font-weight: 690;
+      letter-spacing: -.045em;
+      line-height: 1.12;
+    }
+
+    .intro-copy {
+      max-width: 680px;
+      margin: 0;
+      color: var(--muted);
+      font-size: .96rem;
+      line-height: 1.6;
+    }
+
+    .mockup-badge {
+      display: inline-flex;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 13px;
+      color: #765a26;
+      background: #f5ecd9;
+      border: 1px solid #eadcbd;
+      border-radius: 999px;
+      font-size: .76rem;
+      font-weight: 720;
+      white-space: nowrap;
+    }
+
+    .mockup-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--gold);
+      border-radius: 50%;
+    }
+
+    .sample-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      margin-bottom: 19px;
+      padding: 12px 15px;
+      color: #4c6257;
+      background: #eaf0e9;
+      border: 1px solid #dce6dc;
+      border-radius: 12px;
+      font-size: .82rem;
+      line-height: 1.45;
+    }
+
+    .sample-notice strong {
+      color: #26443a;
+    }
+
+    .notice-icon {
+      display: grid;
+      flex: 0 0 auto;
+      width: 19px;
+      height: 19px;
+      place-items: center;
+      color: #355a49;
+      border: 1px solid #aebfae;
+      border-radius: 50%;
+      font-size: .72rem;
+      font-weight: 800;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: minmax(0, 1.34fr) minmax(340px, .86fr);
+      align-items: start;
+      gap: 18px;
+    }
+
+    .side-column {
+      display: grid;
+      gap: 18px;
+    }
+
+    .card {
+      min-width: 0;
+      overflow: hidden;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 17px 19px;
+      border-bottom: 1px solid #edf0ec;
+    }
+
+    .card-heading h2 {
+      margin: 0;
+      font-size: .98rem;
+      font-weight: 690;
+      letter-spacing: -.01em;
+    }
+
+    .card-heading p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: .74rem;
+    }
+
+    .map-count {
+      padding: 6px 9px;
+      color: #4b6257;
+      background: #eff3ee;
+      border-radius: 999px;
+      font-size: .71rem;
+      font-weight: 690;
+      white-space: nowrap;
+    }
+
+    .map-wrap {
+      position: relative;
+      height: 426px;
+      min-height: 426px;
+      background: #e9eee7;
+    }
+
+    #leafletMap {
+      width: 100%;
+      height: 100%;
+      min-height: 426px;
+      background: #e9eee7;
+    }
+
+    .map-message {
+      position: absolute;
+      z-index: 700;
+      top: 14px;
+      left: 14px;
+      max-width: min(390px, calc(100% - 76px));
+      padding: 10px 13px;
+      color: #40584d;
+      background: rgba(255, 255, 255, .96);
+      border: 1px solid #dce5dc;
+      border-radius: 10px;
+      box-shadow: 0 4px 14px rgba(32, 52, 47, .12);
+      font-size: .75rem;
+      line-height: 1.4;
+    }
+
+    .map-message.error {
+      color: #7a3d32;
+      border-color: #e7c9c1;
+    }
+
+    .map-reset {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      color: #38564a;
+      background: #fff;
+      border: 0;
+      cursor: pointer;
+    }
+
+    .leaflet-control-attribution {
+      font-size: 9px !important;
+    }
+
+    .map-legend {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px;
+      border-top: 1px solid #edf0ec;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #596a61;
+      font-size: .72rem;
+    }
+
+    .legend-dot {
+      width: 9px;
+      height: 9px;
+      background: #28684d;
+      border: 2px solid #dce8df;
+      border-radius: 50%;
+      box-shadow: 0 0 0 1px #28684d;
+    }
+
+    .legend-dot.historical {
+      background: #7d8c83;
+      box-shadow: 0 0 0 1px #7d8c83;
+    }
+
+    .legend-line {
+      width: 18px;
+      height: 0;
+      border-top: 2px dashed #7e9a80;
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: #52635a;
+      font-size: .75rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: var(--pine);
+    }
+
+    .service-status {
+      margin: 0 0 18px;
+      padding: 12px 15px;
+      color: #40584d;
+      background: #eaf0e9;
+      border: 1px solid #dce6dc;
+      border-radius: 12px;
+      font-size: .82rem;
+      line-height: 1.45;
+    }
+
+    .service-status.error {
+      color: #7a3d32;
+      background: #f7ece8;
+      border-color: #e7c9c1;
+    }
+
+    .site-empty {
+      padding: 18px 12px;
+      color: #77857c;
+      font-size: .78rem;
+      line-height: 1.5;
+    }
+
+    .site-flow.current {
+      color: #3b6952;
+    }
+
+    .site-flow.historical {
+      color: #78857d;
+      font-size: .66rem;
+      font-weight: 650;
+      text-transform: uppercase;
+    }
+
+    .station-list {
+      max-height: 266px;
+      overflow-y: auto;
+      padding: 6px 10px 10px;
+    }
+
+    .site-item {
+      display: grid;
+      width: 100%;
+      grid-template-columns: 35px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 11px;
+      padding: 11px 9px;
+      text-align: left;
+      background: transparent;
+      border: 0;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background .15s ease;
+    }
+
+    .site-item:hover,
+    .site-item:focus-visible {
+      background: #f5f7f3;
+    }
+
+    .site-item[aria-current="true"] {
+      background: #edf3ee;
+    }
+
+    .site-avatar {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      color: #3b6952;
+      background: #e5eee7;
+      border-radius: 10px;
+      font-size: .67rem;
+      font-weight: 750;
+    }
+
+    .site-avatar.historical {
+      color: #6d7b72;
+      background: #edf0ec;
+    }
+
+    .site-name {
+      display: block;
+      overflow: hidden;
+      color: #293d35;
+      font-size: .79rem;
+      font-weight: 650;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .site-id {
+      display: block;
+      margin-top: 3px;
+      color: #87928a;
+      font-size: .67rem;
+    }
+
+    .site-flow {
+      color: #365447;
+      font-size: .76rem;
+      font-weight: 720;
+      white-space: nowrap;
+    }
+
+    .site-flow small {
+      color: #839087;
+      font-size: .65rem;
+      font-weight: 500;
+    }
+
+    .historical-tag {
+      padding: 4px 6px;
+      color: #69786f;
+      background: #edf0ec;
+      border-radius: 5px;
+      font-size: .62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .details-content {
+      padding: 17px 19px 19px;
+    }
+
+    .selected-site {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .selected-site h3 {
+      margin: 0 0 4px;
+      font-size: 1.04rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+    }
+
+    .selected-id {
+      margin: 0;
+      color: #819087;
+      font-size: .71rem;
+    }
+
+    .status-chip {
+      flex: 0 0 auto;
+      padding: 5px 8px;
+      color: #3a6950;
+      background: #e8f1e9;
+      border-radius: 999px;
+      font-size: .65rem;
+      font-weight: 730;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      min-width: 0;
+      padding: 11px 12px;
+      background: #f5f7f3;
+      border: 1px solid #edf0ea;
+      border-radius: 10px;
+    }
+
+    .metric-label {
+      display: block;
+      margin-bottom: 6px;
+      color: #7e8b82;
+      font-size: .65rem;
+      font-weight: 650;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      display: block;
+      overflow: hidden;
+      color: #233a30;
+      font-size: 1.02rem;
+      font-weight: 740;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .metric-value small {
+      color: #738178;
+      font-size: .68rem;
+      font-weight: 560;
+    }
+
+    .reading-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 16px;
+      color: #7b8880;
+      font-size: .68rem;
+    }
+
+    .reading-time {
+      color: #52645a;
+      font-weight: 600;
+    }
+
+    .usgs-link {
+      color: #376d57;
+      font-size: .72rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .usgs-link:hover,
+    .usgs-link:focus-visible {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .chart-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 0 0 5px;
+    }
+
+    .chart-heading h3 {
+      margin: 0;
+      color: #40564b;
+      font-size: .75rem;
+      font-weight: 700;
+    }
+
+    .chart-heading span {
+      color: #89958d;
+      font-size: .63rem;
+    }
+
+    .chart-wrap {
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .chart-empty {
+      margin: 20px 0;
+      color: #78867d;
+      font-size: .75rem;
+      text-align: center;
+    }
+
+    .chart-empty.error {
+      color: #7a3d32;
+    }
+
+    .chart {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .chart[hidden] {
+      display: none;
+    }
+
+    .chart text {
+      fill: #839087;
+      font-family: inherit;
+      font-size: 10px;
+    }
+
+    .chart-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 5px;
+      padding-top: 11px;
+      border-top: 1px solid #edf0ec;
+    }
+
+    .mean-label {
+      color: #718077;
+      font-size: .7rem;
+    }
+
+    .mean-value {
+      color: #264438;
+      font-size: .88rem;
+      font-weight: 750;
+    }
+
+    .mean-value small {
+      color: #748278;
+      font-size: .67rem;
+      font-weight: 550;
+    }
+
+    .days-used {
+      color: #7f8a82;
+      font-size: .66rem;
+      white-space: nowrap;
+    }
+
+    .states {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .state {
+      padding: 13px 15px;
+      background: rgba(255, 255, 255, .74);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+
+    .state strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #53665b;
+      font-size: .7rem;
+    }
+
+    .state p {
+      margin: 0;
+      color: #819087;
+      font-size: .68rem;
+      line-height: 1.45;
+    }
+
+    .state.loading {
+      border-left: 3px solid #78a99b;
+    }
+
+    .state.error {
+      border-left: 3px solid #c17c67;
+    }
+
+    .stage-placeholder {
+      color: #75837a;
+      font-size: .72rem;
+      font-weight: 650;
+    }
+
+    .leaflet-container {
+      font: inherit;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 22px;
+      color: #89948c;
+      font-size: .66rem;
+    }
+
+    :focus-visible {
+      outline: 3px solid #c8984d;
+      outline-offset: 3px;
+    }
+
+    @media (max-width: 960px) {
+      .dashboard {
+        grid-template-columns: minmax(0, 1.1fr) minmax(300px, .9fr);
+        gap: 13px;
+      }
+
+      .side-column {
+        gap: 13px;
+      }
+
+      .map-wrap,
+      #leafletMap {
+        height: 396px;
+        min-height: 396px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .topbar {
+        min-height: 62px;
+      }
+
+      .topbar-meta {
+        display: none;
+      }
+
+      .page {
+        padding-top: 25px;
+      }
+
+      .intro {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 13px;
+      }
+
+      .dashboard {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .side-column {
+        display: contents;
+      }
+
+      .map-card {
+        grid-row: 1;
+      }
+
+      .stations-card {
+        grid-row: 2;
+      }
+
+      .details-card {
+        grid-row: 3;
+      }
+
+      .map-wrap,
+      #leafletMap {
+        height: min(105vw, 430px);
+        min-height: 315px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .brand {
+        font-size: .74rem;
+      }
+
+      .page {
+        padding-right: 12px;
+        padding-left: 12px;
+      }
+
+      .card-heading {
+        padding: 14px;
+      }
+
+      .map-wrap,
+      #leafletMap {
+        height: 335px;
+        min-height: 335px;
+      }
+
+      .states {
+        grid-template-columns: 1fr;
+      }
+
+      .details-content {
+        padding: 15px;
+      }
+
+      .footer {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M4 5c4 0 4 5 8 5s4-5 8-5M4 12c4 0 4 5 8 5s4-5 8-5M4 19c4 0 4-5 8-5s4 5 8 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span>Bear River Basin</span>
+    </div>
+    <span class="topbar-meta">Water data explorer / Utah, Idaho, Wyoming</span>
+  </header>
+
+  <main class="page">
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">Streamflow monitoring</p>
+        <h1 id="page-title">Bear River Gage Explorer</h1>
+        <p class="intro-copy">Explore stream gages across the Bear River Basin and inspect recent conditions at each monitoring site.</p>
+      </div>
+      <div class="mockup-badge"><span class="mockup-dot" aria-hidden="true"></span>Stage 4 / live hydrograph</div>
+    </section>
+
+    <div class="service-status" id="serviceStatus" role="status" aria-live="polite">Loading live basin boundary and USGS stream gages...</div>
+
+    <section class="dashboard" aria-label="Gage explorer dashboard">
+      <article class="card map-card" aria-labelledby="map-title">
+        <div class="card-heading">
+          <div>
+            <h2 id="map-title">Basin gage map</h2>
+            <p>Hydrologic Unit 1601 / Bear River</p>
+          </div>
+          <span class="map-count" id="mapCount">Loading sites...</span>
+        </div>
+        <div class="map-wrap" id="mapWrap">
+          <div id="leafletMap" role="application" aria-label="Interactive map of Bear River Basin and USGS stream gages"></div>
+          <div class="map-message" id="mapMessage" role="status">Loading basin boundary and stream gages...</div>
+        </div>
+        <div class="map-legend" aria-label="Map legend">
+          <span class="legend-item"><span class="legend-dot" aria-hidden="true"></span>Current gage / flow within 7 days</span>
+          <span class="legend-item"><span class="legend-dot historical" aria-hidden="true"></span>Historical gage</span>
+          <span class="legend-item"><span class="legend-line" aria-hidden="true"></span>HUC 1601 boundary</span>
+        </div>
+      </article>
+
+      <div class="side-column">
+        <article class="card stations-card" aria-labelledby="stations-title">
+          <div class="card-heading">
+            <div>
+              <h2 id="stations-title">USGS stream gages</h2>
+              <p id="stationCount">Loading locations...</p>
+            </div>
+            <label class="toggle" for="historicalToggle">
+              <input id="historicalToggle" type="checkbox" disabled>
+              Historical
+            </label>
+          </div>
+          <div class="station-list" id="stationList" aria-label="USGS stream gages" aria-live="polite">
+            <div class="site-empty">Loading stream gage locations...</div>
+          </div>
+        </article>
+
+        <article class="card details-card" aria-labelledby="details-title">
+          <div class="card-heading">
+            <div>
+              <h2 id="details-title">Selected gage</h2>
+              <p>Live monitoring-location details</p>
+            </div>
+            <span class="map-count">Live details</span>
+          </div>
+          <div class="details-content">
+            <div class="selected-site">
+              <div>
+                <h3 id="siteName">No gage selected</h3>
+                <p class="selected-id">Site number <span id="siteNumber">Select a marker or list item</span></p>
+              </div>
+              <span class="status-chip" id="siteStatus">Select a gage</span>
+            </div>
+
+            <div class="metrics">
+              <div class="metric">
+                <span class="metric-label">Most recent flow</span>
+                <span class="metric-value"><span id="siteFlow">Unavailable</span> <small id="siteFlowUnit"></small></span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Drainage area</span>
+                <span class="metric-value"><span id="siteArea">Unavailable</span> <small>mi<sup>2</sup></small></span>
+              </div>
+            </div>
+
+            <div class="reading-meta">
+              <span>Reading time</span>
+              <span class="reading-time" id="readingTime">Select a gage</span>
+            </div>
+            <div class="reading-meta">
+              <span>Data qualifier</span>
+              <span class="reading-time" id="dataQualifier">Select a gage</span>
+            </div>
+            <div class="reading-meta">
+              <span>Approval status</span>
+              <span class="reading-time" id="approvalStatus">Select a gage</span>
+            </div>
+            <p style="margin: 0 0 17px;">
+              <span class="stage-placeholder" id="siteLinkPlaceholder">Select a gage to open its USGS page.</span>
+              <a class="usgs-link" id="siteLink" href="#" target="_blank" rel="noopener noreferrer" hidden>Open USGS monitoring page <span aria-hidden="true">&rarr;</span></a>
+            </p>
+
+            <div class="chart-heading">
+              <h3 id="chartTitle">Daily mean discharge (cfs)</h3>
+              <span id="chartDateRange">Select a gage</span>
+            </div>
+            <p class="chart-empty" id="chartStatus" role="status" aria-live="polite">Select a gage to load daily mean discharge.</p>
+            <div class="chart-wrap">
+              <svg class="chart" id="dailyChart" viewBox="0 0 440 170" role="img" aria-labelledby="chart-svg-title chart-svg-desc" hidden>
+                <title id="chart-svg-title">Daily mean discharge hydrograph</title>
+                <desc id="chart-svg-desc">Daily mean streamflow in cubic feet per second.</desc>
+              </svg>
+            </div>
+            <div class="chart-summary">
+              <div>
+                <span class="mean-label">Mean daily flow</span><br>
+                <span class="mean-value"><span id="meanFlow">Unavailable</span> <small>cfs</small></span>
+              </div>
+              <span class="days-used" id="dailyCount">Select a gage</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>Site locations and flow-recency classifications are loaded from USGS Water Data.</span>
+      <span>
+        <a href="https://api.waterdata.usgs.gov/docs/ogcapi/" target="_blank" rel="noreferrer">USGS Water Data API</a>
+        / <a href="https://www.usgs.gov/national-hydrography/watershed-boundary-dataset" target="_blank" rel="noreferrer">Watershed Boundary Dataset</a>
+        / Base map tiles &copy; OpenStreetMap contributors
+      </span>
+    </footer>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    const usgsApi = "https://api.waterdata.usgs.gov/ogcapi/v1";
+    const usgsApiOrigin = new URL(usgsApi).origin;
+    const wbdQuery = "https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/2/query";
+    const recencyWindowMs = 7 * 24 * 60 * 60 * 1000;
+    const stationList = document.getElementById("stationList");
+    const historicalToggle = document.getElementById("historicalToggle");
+    const serviceStatus = document.getElementById("serviceStatus");
+    const mapMessage = document.getElementById("mapMessage");
+    const sitesById = new Map();
+    const markersById = new Map();
+    let allSites = [];
+    let selectedSiteId = null;
+    let chartRequestId = 0;
+    let map;
+    let basinBounds;
+    let currentLayer;
+    let historicalLayer;
+
+    function showStatus(message, isError) {
+      serviceStatus.hidden = !message;
+      serviceStatus.classList.toggle("error", Boolean(isError));
+      serviceStatus.textContent = message;
+      mapMessage.hidden = !message;
+      mapMessage.classList.toggle("error", Boolean(isError));
+      mapMessage.textContent = message;
+      if (isError) {
+        serviceStatus.setAttribute("role", "alert");
+        serviceStatus.setAttribute("aria-live", "assertive");
+        mapMessage.setAttribute("role", "alert");
+        mapMessage.setAttribute("aria-live", "assertive");
+      } else {
+        serviceStatus.setAttribute("role", "status");
+        serviceStatus.setAttribute("aria-live", "polite");
+        mapMessage.setAttribute("role", "status");
+        mapMessage.setAttribute("aria-live", "polite");
+      }
+    }
+
+    function showGageLoadError(prefix, error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      showStatus(prefix + detail, true);
+      document.getElementById("stationCount").textContent = "Gage data unavailable";
+      const message = document.createElement("div");
+      message.className = "site-empty";
+      message.textContent = "The live gage list is unavailable. Try reloading after checking your connection.";
+      stationList.replaceChildren(message);
+    }
+
+    async function requestJson(url, label) {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(label + " request failed (HTTP " + response.status + ").");
+      }
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(label + " service error: " + (data.error.message || "unknown service error") + ".");
+      }
+      return data;
+    }
+
+    async function requestAllFeatures(firstUrl, label) {
+      const features = [];
+      const visited = new Set();
+      let nextUrl = firstUrl;
+
+      while (nextUrl) {
+        if (visited.size >= 100) {
+          throw new Error(label + " pagination exceeded 100 pages.");
+        }
+        const pageUrl = new URL(nextUrl);
+        if (pageUrl.origin !== usgsApiOrigin || !pageUrl.pathname.startsWith("/ogcapi/v1/collections/")) {
+          throw new Error(label + " returned an unexpected pagination link.");
+        }
+        if (visited.has(pageUrl.href)) {
+          throw new Error(label + " returned a repeated pagination link.");
+        }
+        visited.add(pageUrl.href);
+
+        const page = await requestJson(pageUrl.href, label);
+        if (!Array.isArray(page.features)) {
+          throw new Error(label + " response did not contain a feature list.");
+        }
+        features.push.apply(features, page.features);
+        const nextLink = Array.isArray(page.links) ? page.links.find(function (link) {
+          return link.rel === "next";
+        }) : null;
+        nextUrl = nextLink ? new URL(nextLink.href, pageUrl.href).href : null;
+      }
+
+      return features;
+    }
+
+    function collectCoordinates(value, coordinates) {
+      if (!Array.isArray(value)) return;
+      if (typeof value[0] === "number" && typeof value[1] === "number") {
+        coordinates.push(value);
+        return;
+      }
+      value.forEach(function (part) {
+        collectCoordinates(part, coordinates);
+      });
+    }
+
+    function getGeometryBounds(geoJson) {
+      const coordinates = [];
+      geoJson.features.forEach(function (feature) {
+        if (feature.geometry) collectCoordinates(feature.geometry.coordinates, coordinates);
+      });
+      if (!coordinates.length) {
+        throw new Error("The WBD response did not contain usable basin coordinates.");
+      }
+
+      const bounds = [Infinity, Infinity, -Infinity, -Infinity];
+      coordinates.forEach(function (position) {
+        bounds[0] = Math.min(bounds[0], position[0]);
+        bounds[1] = Math.min(bounds[1], position[1]);
+        bounds[2] = Math.max(bounds[2], position[0]);
+        bounds[3] = Math.max(bounds[3], position[1]);
+      });
+      return bounds;
+    }
+
+    function pointOnSegment(point, start, end) {
+      const cross = (point[1] - start[1]) * (end[0] - start[0]) - (point[0] - start[0]) * (end[1] - start[1]);
+      if (Math.abs(cross) > 1e-10) return false;
+      return point[0] >= Math.min(start[0], end[0]) - 1e-10 &&
+        point[0] <= Math.max(start[0], end[0]) + 1e-10 &&
+        point[1] >= Math.min(start[1], end[1]) - 1e-10 &&
+        point[1] <= Math.max(start[1], end[1]) + 1e-10;
+    }
+
+    function pointInRing(point, ring) {
+      let inside = false;
+      for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index, index += 1) {
+        const start = ring[index];
+        const end = ring[previous];
+        if (pointOnSegment(point, start, end)) return true;
+        const crossesLatitude = (start[1] > point[1]) !== (end[1] > point[1]);
+        if (crossesLatitude && point[0] < ((end[0] - start[0]) * (point[1] - start[1])) / (end[1] - start[1]) + start[0]) {
+          inside = !inside;
+        }
+      }
+      return inside;
+    }
+
+    function pointInPolygon(point, rings) {
+      if (!rings.length || !pointInRing(point, rings[0])) return false;
+      return !rings.slice(1).some(function (hole) {
+        return pointInRing(point, hole);
+      });
+    }
+
+    function pointInBasin(point, geometries) {
+      const geometryList = Array.isArray(geometries) ? geometries : [geometries];
+      return geometryList.some(function (geometry) {
+        if (!geometry) return false;
+        if (geometry.type === "Polygon") {
+          return pointInPolygon(point, geometry.coordinates);
+        }
+        if (geometry.type === "MultiPolygon") {
+          return geometry.coordinates.some(function (polygon) {
+            return pointInPolygon(point, polygon);
+          });
+        }
+        return false;
+      });
+    }
+
+    function fetchBasinBoundary() {
+      const url = new URL(wbdQuery);
+      url.search = new URLSearchParams({
+        where: "HUC4='1601'",
+        outFields: "HUC4,NAME",
+        returnGeometry: "true",
+        outSR: "4326",
+        f: "geojson"
+      });
+      return requestJson(url.href, "USGS Watershed Boundary Dataset");
+    }
+
+    function fetchLocationFeatures(bounds) {
+      const url = new URL(usgsApi + "/collections/monitoring-locations/items");
+      url.search = new URLSearchParams({
+        f: "json",
+        limit: "1000",
+        agency_code: "USGS",
+        site_type_code: "ST",
+        bbox: bounds.join(",")
+      });
+      return requestAllFeatures(url.href, "USGS monitoring locations");
+    }
+
+    function fetchLatestFlowFeatures(bounds) {
+      const url = new URL(usgsApi + "/collections/latest-continuous/items");
+      url.search = new URLSearchParams({
+        f: "json",
+        limit: "1000",
+        agency_code: "USGS",
+        site_type_code: "ST",
+        parameter_code: "00060",
+        statistic_id: "00011",
+        bbox: bounds.join(",")
+      });
+      return requestAllFeatures(url.href, "USGS latest streamflow");
+    }
+
+    function fetchDailyFlowFeatures(site, dateRange) {
+      const url = new URL(usgsApi + "/collections/daily/items");
+      url.search = new URLSearchParams({
+        f: "json",
+        limit: "1000",
+        monitoring_location_id: site.id,
+        parameter_code: "00060",
+        statistic_id: "00003",
+        time: dateRange.startDate + "/" + dateRange.endDate
+      });
+      return requestAllFeatures(url.href, "USGS daily mean streamflow");
+    }
+
+    function createLatestFlowIndex(features) {
+      const latestBySite = new Map();
+      features.forEach(function (feature) {
+        const properties = feature.properties || {};
+        const value = properties.value;
+        const valueNumber = value === null || value === "" ? NaN : Number(value);
+        const timeMs = Date.parse(properties.time);
+        if (!properties.monitoring_location_id || !Number.isFinite(valueNumber) || !Number.isFinite(timeMs)) return;
+
+        const previous = latestBySite.get(properties.monitoring_location_id);
+        if (!previous || timeMs > previous.timeMs) {
+          latestBySite.set(properties.monitoring_location_id, {
+            timeMs: timeMs,
+            time: properties.time,
+            value: valueNumber,
+            unit: properties.unit_of_measure || null,
+            qualifier: properties.qualifier || null,
+            approvalStatus: properties.approval_status || null
+          });
+        }
+      });
+      return latestBySite;
+    }
+
+    function normalizeSites(locationFeatures, latestBySite, boundary) {
+      const now = Date.now();
+      const uniqueSites = new Map();
+      locationFeatures.forEach(function (feature) {
+        const properties = feature.properties || {};
+        const coordinates = feature.geometry && feature.geometry.coordinates;
+        if (!Array.isArray(coordinates) || coordinates.length < 2) return;
+        const longitude = Number(coordinates[0]);
+        const latitude = Number(coordinates[1]);
+        if (!Number.isFinite(longitude) || !Number.isFinite(latitude) || !pointInBasin([longitude, latitude], boundary)) return;
+
+        const siteNumber = properties.monitoring_location_number;
+        const id = properties.id || (siteNumber ? "USGS-" + siteNumber : "");
+        if (!id || uniqueSites.has(id)) return;
+        const latestFlow = latestBySite.get(id) || null;
+        const isCurrent = Boolean(latestFlow &&
+          latestFlow.timeMs <= now &&
+          now - latestFlow.timeMs <= recencyWindowMs);
+
+        uniqueSites.set(id, {
+          id: id,
+          number: siteNumber || id.replace(/^USGS-/, ""),
+          name: properties.monitoring_location_name || "Unnamed USGS stream site",
+          latitude: latitude,
+          longitude: longitude,
+          drainageArea: properties.drainage_area === null || properties.drainage_area === ""
+            ? null
+            : Number.isFinite(Number(properties.drainage_area)) ? Number(properties.drainage_area) : null,
+          latestFlow: latestFlow,
+          current: isCurrent
+        });
+      });
+
+      return Array.from(uniqueSites.values()).sort(function (a, b) {
+        return a.name.localeCompare(b.name) || a.number.localeCompare(b.number);
+      });
+    }
+
+    function convertFlowToCfs(value, unit) {
+      const normalizedUnit = String(unit || "").replace(/\s/g, "").toLowerCase();
+      if (["ft^3/s", "ft3/s", "ft³/s", "cfs", "cubicfeetpersecond"].includes(normalizedUnit)) {
+        return value;
+      }
+      if (["m^3/s", "m3/s", "m³/s", "cms", "cumecs", "cubicmeterspersecond"].includes(normalizedUnit)) {
+        return value * 35.3146667;
+      }
+      return null;
+    }
+
+    function formatMountainTime(timeMs) {
+      if (!Number.isFinite(timeMs)) return "Unavailable";
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Denver",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short"
+      }).format(new Date(timeMs));
+    }
+
+    function getMountainDate(date) {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Denver",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).formatToParts(date);
+      const values = {};
+      parts.forEach(function (part) {
+        if (part.type !== "literal") values[part.type] = part.value;
+      });
+      return values.year + "-" + values.month + "-" + values.day;
+    }
+
+    function shiftIsoDate(date, offsetDays) {
+      const shiftedDate = new Date(date + "T00:00:00Z");
+      shiftedDate.setUTCDate(shiftedDate.getUTCDate() + offsetDays);
+      return shiftedDate.toISOString().slice(0, 10);
+    }
+
+    function getDailyDateRange() {
+      const endDate = getMountainDate(new Date());
+      return { startDate: shiftIsoDate(endDate, -364), endDate: endDate };
+    }
+
+    function formatDailyDate(date, includeYear) {
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone: "UTC",
+        month: "short",
+        day: "numeric",
+        year: includeYear ? "numeric" : undefined
+      }).format(new Date(date + "T00:00:00Z"));
+    }
+
+    function createDailySeries(features, dateRange) {
+      const valueByDate = new Map();
+      features.forEach(function (feature) {
+        const properties = feature.properties || {};
+        const date = String(properties.time || "").slice(0, 10);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < dateRange.startDate || date > dateRange.endDate) return;
+
+        const rawValue = properties.value;
+        const value = rawValue === null || rawValue === "" ? NaN : Number(rawValue);
+        let valueCfs = null;
+        if (Number.isFinite(value)) {
+          valueCfs = convertFlowToCfs(value, properties.unit_of_measure);
+          if (valueCfs === null) {
+            throw new Error("The daily flow record uses an unsupported unit: " + (properties.unit_of_measure || "not reported") + ".");
+          }
+        }
+
+        const lastModified = Date.parse(properties.last_modified) || 0;
+        const existing = valueByDate.get(date);
+        if (!existing || lastModified >= existing.lastModified) {
+          valueByDate.set(date, { value: valueCfs, lastModified: lastModified });
+        }
+      });
+
+      const dailySeries = [];
+      for (let offset = 0; offset < 365; offset += 1) {
+        const date = shiftIsoDate(dateRange.startDate, offset);
+        const record = valueByDate.get(date);
+        dailySeries.push({ date: date, value: record ? record.value : null });
+      }
+      return dailySeries;
+    }
+
+    function niceChartStep(range) {
+      if (!Number.isFinite(range) || range <= 0) return 1;
+      const roughStep = range / 4;
+      const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+      const normalizedStep = roughStep / magnitude;
+      const niceStep = normalizedStep <= 1 ? 1 : normalizedStep <= 2 ? 2 : normalizedStep <= 5 ? 5 : 10;
+      return niceStep * magnitude;
+    }
+
+    function appendSvgElement(svg, tagName, attributes, text) {
+      const element = document.createElementNS("http://www.w3.org/2000/svg", tagName);
+      Object.keys(attributes).forEach(function (name) {
+        element.setAttribute(name, attributes[name]);
+      });
+      if (text !== undefined) element.textContent = text;
+      svg.append(element);
+      return element;
+    }
+
+    function summarizeDailySeries(dailySeries) {
+      const values = dailySeries.filter(function (day) {
+        return day.value !== null && Number.isFinite(day.value);
+      });
+      const sum = values.reduce(function (total, day) { return total + day.value; }, 0);
+      return {
+        sum: sum,
+        count: values.length,
+        mean: values.length ? sum / values.length : null
+      };
+    }
+
+    function renderDailyChart(site, dailySeries, dateRange) {
+      const chart = document.getElementById("dailyChart");
+      chart.replaceChildren();
+      const chartTitle = appendSvgElement(chart, "title", { id: "chart-svg-title" }, "");
+      const chartDescription = appendSvgElement(chart, "desc", { id: "chart-svg-desc" }, "");
+      const values = dailySeries.filter(function (day) {
+        return day.value !== null && Number.isFinite(day.value);
+      });
+      const summary = summarizeDailySeries(dailySeries);
+      const observedMin = values.length ? Math.min.apply(null, values.map(function (day) { return day.value; })) : 0;
+      const observedMax = values.length ? Math.max.apply(null, values.map(function (day) { return day.value; })) : 0;
+      const step = niceChartStep(observedMax - Math.min(0, observedMin));
+      const axisMin = observedMin < 0 ? Math.floor(observedMin / step) * step : 0;
+      let axisMax = Math.ceil(observedMax / step) * step;
+      if (axisMax <= axisMin) axisMax = axisMin + step;
+
+      const plot = { left: 52, right: 422, top: 16, bottom: 128 };
+      const plotHeight = plot.bottom - plot.top;
+      const plotWidth = plot.right - plot.left;
+      const yForValue = function (value) {
+        return plot.bottom - ((value - axisMin) / (axisMax - axisMin)) * plotHeight;
+      };
+
+      for (let tick = axisMin; tick <= axisMax + step / 1000; tick += step) {
+        const y = yForValue(tick);
+        appendSvgElement(chart, "line", {
+          x1: plot.left,
+          y1: y,
+          x2: plot.right,
+          y2: y,
+          stroke: tick === axisMin ? "#dfe6df" : "#edf1ec",
+          "stroke-dasharray": tick === axisMin ? "" : "4 5"
+        });
+        appendSvgElement(chart, "text", {
+          x: plot.left - 7,
+          y: y + 3,
+          "text-anchor": "end"
+        }, tick.toLocaleString("en-US", { maximumFractionDigits: 2 }));
+      }
+
+      appendSvgElement(chart, "line", {
+        x1: plot.left,
+        y1: plot.top,
+        x2: plot.left,
+        y2: plot.bottom,
+        stroke: "#dfe6df"
+      });
+
+      [0, Math.floor((dailySeries.length - 1) / 2), dailySeries.length - 1].forEach(function (index) {
+        const x = plot.left + (index / (dailySeries.length - 1)) * plotWidth;
+        const label = formatDailyDate(dailySeries[index].date, false);
+        appendSvgElement(chart, "line", {
+          x1: x,
+          y1: plot.bottom,
+          x2: x,
+          y2: plot.bottom + 4,
+          stroke: "#dfe6df"
+        });
+        appendSvgElement(chart, "text", {
+          x: x,
+          y: 151,
+          "text-anchor": index === 0 ? "start" : index === dailySeries.length - 1 ? "end" : "middle"
+        }, label);
+      });
+
+      let pathData = "";
+      let inSegment = false;
+      dailySeries.forEach(function (day, index) {
+        if (day.value === null || !Number.isFinite(day.value)) {
+          inSegment = false;
+          return;
+        }
+        const x = plot.left + (index / (dailySeries.length - 1)) * plotWidth;
+        const y = yForValue(day.value);
+        pathData += (inSegment ? "L" : "M") + x.toFixed(2) + " " + y.toFixed(2) + " ";
+        inSegment = true;
+      });
+      appendSvgElement(chart, "path", {
+        d: pathData.trim(),
+        fill: "none",
+        stroke: "#3f8874",
+        "stroke-width": 2.5,
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round"
+      });
+
+      let lastObservedIndex = -1;
+      dailySeries.forEach(function (day, index) {
+        if (day.value !== null && Number.isFinite(day.value)) lastObservedIndex = index;
+      });
+      if (values.length && lastObservedIndex >= 0) {
+        const lastObservedValue = dailySeries[lastObservedIndex].value;
+        const lastX = plot.left + (lastObservedIndex / (dailySeries.length - 1)) * plotWidth;
+        appendSvgElement(chart, "circle", {
+          cx: lastX,
+          cy: yForValue(lastObservedValue),
+          r: 3.5,
+          fill: "#3f8874",
+          stroke: "#ffffff",
+          "stroke-width": 2
+        });
+      }
+
+      chartTitle.textContent = "Daily mean discharge at " + site.name + " (USGS " + site.number + ")";
+      chartDescription.textContent =
+        "Daily mean discharge in cubic feet per second from " + dateRange.startDate +
+        " through " + dateRange.endDate + ". Missing days appear as gaps.";
+      document.getElementById("chartTitle").textContent = "Daily mean discharge (cfs)";
+      document.getElementById("chartDateRange").textContent =
+        formatDailyDate(dateRange.startDate, true) + " - " + formatDailyDate(dateRange.endDate, true);
+      document.getElementById("meanFlow").textContent = summary.mean === null ? "Unavailable" : summary.mean.toFixed(1);
+      const missingCount = dailySeries.length - values.length;
+      document.getElementById("dailyCount").textContent =
+        summary.count + " daily values used" + (missingCount ? "; " + missingCount + (missingCount === 1 ? " missing day" : " missing days") : "");
+      document.getElementById("chartStatus").hidden = true;
+      chart.removeAttribute("hidden");
+    }
+
+    function showChartMessage(message, state, dateRange) {
+      const chart = document.getElementById("dailyChart");
+      chart.replaceChildren();
+      chart.setAttribute("hidden", "");
+      const status = document.getElementById("chartStatus");
+      status.textContent = message;
+      status.hidden = false;
+      status.classList.toggle("error", state === "error");
+      status.setAttribute("role", state === "error" ? "alert" : "status");
+      status.setAttribute("aria-live", state === "error" ? "assertive" : "polite");
+      document.getElementById("chartDateRange").textContent = dateRange
+        ? formatDailyDate(dateRange.startDate, true) + " - " + formatDailyDate(dateRange.endDate, true)
+        : "Select a gage";
+      document.getElementById("meanFlow").textContent = "Unavailable";
+      document.getElementById("dailyCount").textContent = state === "loading"
+        ? "Loading..."
+        : state === "error" ? "Unavailable" : "0 daily values used";
+    }
+
+    async function loadDailyChart(site) {
+      const requestId = ++chartRequestId;
+      const dateRange = getDailyDateRange();
+      showChartMessage("Loading daily mean discharge...", "loading", dateRange);
+      try {
+        const features = await fetchDailyFlowFeatures(site, dateRange);
+        if (requestId !== chartRequestId || selectedSiteId !== site.id) return;
+        const dailySeries = createDailySeries(features, dateRange);
+        if (!dailySeries.some(function (day) { return day.value !== null && Number.isFinite(day.value); })) {
+          showChartMessage("No daily mean discharge values are available for this gage and date range.", "empty", dateRange);
+          return;
+        }
+        renderDailyChart(site, dailySeries, dateRange);
+      } catch (error) {
+        if (requestId !== chartRequestId || selectedSiteId !== site.id) return;
+        const detail = error instanceof Error ? error.message : String(error);
+        showChartMessage("Daily mean discharge could not be loaded. " + detail, "error", dateRange);
+      }
+    }
+
+    function clearDailyChart() {
+      chartRequestId += 1;
+      document.getElementById("chartTitle").textContent = "Daily mean discharge (cfs)";
+      showChartMessage("Select a gage to load daily mean discharge.", "empty", null);
+      document.getElementById("dailyCount").textContent = "Select a gage";
+    }
+
+    function clearSelectedDetails() {
+      document.getElementById("siteName").textContent = "No gage selected";
+      document.getElementById("siteNumber").textContent = "Select a marker or list item";
+      document.getElementById("siteStatus").textContent = "Select a gage";
+      document.getElementById("siteFlow").textContent = "Unavailable";
+      document.getElementById("siteFlowUnit").textContent = "";
+      document.getElementById("siteArea").textContent = "Unavailable";
+      document.getElementById("readingTime").textContent = "Select a gage";
+      document.getElementById("dataQualifier").textContent = "Select a gage";
+      document.getElementById("approvalStatus").textContent = "Select a gage";
+      document.getElementById("siteLink").hidden = true;
+      document.getElementById("siteLinkPlaceholder").hidden = false;
+      clearDailyChart();
+    }
+
+    function updateSelectedDetails(site) {
+      document.getElementById("siteName").textContent = site.name;
+      document.getElementById("siteNumber").textContent = site.number;
+      document.getElementById("siteStatus").textContent = site.current ? "Current / last 7 days" : "Historical";
+
+      const latestFlow = site.latestFlow;
+      if (!latestFlow) {
+        document.getElementById("siteFlow").textContent = "Unavailable";
+        document.getElementById("siteFlowUnit").textContent = "";
+        document.getElementById("readingTime").textContent = "No discharge reading available";
+        document.getElementById("dataQualifier").textContent = "Not reported";
+        document.getElementById("approvalStatus").textContent = "Not reported";
+      } else {
+        const flowCfs = convertFlowToCfs(latestFlow.value, latestFlow.unit);
+        document.getElementById("siteFlow").textContent = flowCfs === null ? "Unavailable" : flowCfs.toFixed(1);
+        document.getElementById("siteFlowUnit").textContent = flowCfs === null
+          ? "Unsupported unit: " + (latestFlow.unit || "not reported")
+          : "cfs";
+        document.getElementById("readingTime").textContent = formatMountainTime(latestFlow.timeMs);
+        document.getElementById("dataQualifier").textContent = latestFlow.qualifier || "None reported";
+        document.getElementById("approvalStatus").textContent = latestFlow.approvalStatus || "Not reported";
+      }
+
+      document.getElementById("siteArea").textContent = site.drainageArea === null
+        ? "Unavailable"
+        : site.drainageArea.toLocaleString("en-US", { maximumFractionDigits: 2 });
+      const siteLink = document.getElementById("siteLink");
+      siteLink.href = "https://waterdata.usgs.gov/monitoring-location/USGS-" + encodeURIComponent(site.number) + "/";
+      siteLink.hidden = false;
+      document.getElementById("siteLinkPlaceholder").hidden = true;
+    }
+
+    function updateMarkerStyles() {
+      markersById.forEach(function (marker, siteId) {
+        const site = sitesById.get(siteId);
+        const selected = siteId === selectedSiteId;
+        marker.setStyle({
+          color: "#ffffff",
+          weight: selected ? 3 : 1.5,
+          fillColor: selected ? "#bc8540" : (site.current ? "#28684d" : "#7d8c83"),
+          fillOpacity: 0.96,
+          radius: selected ? 8 : (site.current ? 6 : 5)
+        });
+      });
+    }
+
+    function renderStationList() {
+      const visibleSites = allSites.filter(function (site) {
+        return site.current || historicalToggle.checked;
+      });
+      stationList.replaceChildren();
+
+      if (!visibleSites.length) {
+        const emptyMessage = document.createElement("div");
+        emptyMessage.className = "site-empty";
+        emptyMessage.textContent = allSites.length
+          ? "No current gages are available. Turn on Historical to show all sites."
+          : "No matching USGS stream gages were found inside HUC 1601.";
+        stationList.append(emptyMessage);
+      } else {
+        visibleSites.forEach(function (site) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "site-item";
+          button.dataset.siteId = site.id;
+          button.setAttribute("aria-current", String(site.id === selectedSiteId));
+
+          const avatar = document.createElement("span");
+          avatar.className = site.current ? "site-avatar" : "site-avatar historical";
+          avatar.textContent = site.current ? "G" : "H";
+          avatar.setAttribute("aria-hidden", "true");
+
+          const details = document.createElement("span");
+          const name = document.createElement("span");
+          name.className = "site-name";
+          name.textContent = site.name;
+          const id = document.createElement("span");
+          id.className = "site-id";
+          id.textContent = "USGS site " + site.number;
+          details.append(name, id);
+
+          const status = document.createElement("span");
+          status.className = site.current ? "site-flow current" : "site-flow historical";
+          status.textContent = site.current ? "Current" : "Historical";
+
+          button.append(avatar, details, status);
+          stationList.append(button);
+        });
+      }
+
+      const currentCount = allSites.filter(function (site) { return site.current; }).length;
+      const historicalCount = allSites.length - currentCount;
+      const displayedCount = visibleSites.length;
+      document.getElementById("stationCount").textContent =
+        "Showing " + displayedCount + " of " + allSites.length + " sites / " +
+        currentCount + " current, " + historicalCount + " historical";
+      document.getElementById("mapCount").textContent =
+        displayedCount + " shown / " + currentCount + " current";
+      updateMarkerStyles();
+    }
+
+    function selectSite(siteId) {
+      const site = sitesById.get(siteId);
+      if (!site) return;
+
+      if (!site.current && !historicalToggle.checked) {
+        historicalToggle.checked = true;
+        historicalLayer.addTo(map);
+      }
+      selectedSiteId = site.id;
+      updateSelectedDetails(site);
+      renderStationList();
+      loadDailyChart(site);
+
+      const marker = markersById.get(site.id);
+      if (marker) map.panTo(marker.getLatLng());
+    }
+
+    function initializeMap() {
+      if (typeof L === "undefined") {
+        throw new Error("The Leaflet map library could not be loaded. Check your internet connection and reload.");
+      }
+
+      map = L.map("leafletMap", { scrollWheelZoom: false }).setView([41.9, -111.3], 7);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noreferrer\">OpenStreetMap contributors</a>"
+      }).addTo(map);
+      L.control.scale({ imperial: true, metric: false }).addTo(map);
+      currentLayer = L.layerGroup().addTo(map);
+      historicalLayer = L.layerGroup();
+
+      const reset = L.control({ position: "topright" });
+      reset.onAdd = function () {
+        const container = L.DomUtil.create("div", "leaflet-bar");
+        const button = L.DomUtil.create("button", "map-reset", container);
+        button.type = "button";
+        button.textContent = "Reset";
+        button.setAttribute("aria-label", "Reset map to the Bear River Basin");
+        L.DomEvent.disableClickPropagation(container);
+        button.addEventListener("click", function () {
+          if (basinBounds) map.fitBounds(basinBounds, { padding: [18, 18] });
+        });
+        return container;
+      };
+      reset.addTo(map);
+    }
+
+    async function loadBasinAndGages() {
+      showStatus("Loading the HUC 1601 boundary and USGS stream gages...", false);
+      const boundaryData = await fetchBasinBoundary();
+      if (!Array.isArray(boundaryData.features) || !boundaryData.features.length) {
+        throw new Error("The WBD service returned no HUC 1601 boundary.");
+      }
+      const geometryBounds = getGeometryBounds(boundaryData);
+      const [locationFeatures, flowFeatures] = await Promise.all([
+        fetchLocationFeatures(geometryBounds),
+        fetchLatestFlowFeatures(geometryBounds)
+      ]);
+
+      const boundaryLayer = L.geoJSON(boundaryData, {
+        style: {
+          color: "#527a59",
+          weight: 2,
+          opacity: 0.95,
+          dashArray: "6 5",
+          fillColor: "#b9d1b4",
+          fillOpacity: 0.18
+        }
+      }).addTo(map);
+      basinBounds = boundaryLayer.getBounds();
+      if (!basinBounds.isValid()) {
+        throw new Error("The WBD service returned an invalid HUC 1601 boundary.");
+      }
+
+      const latestBySite = createLatestFlowIndex(flowFeatures);
+      allSites = normalizeSites(locationFeatures, latestBySite, boundaryData.features.map(function (feature) {
+        return feature.geometry;
+      }));
+      allSites.forEach(function (site) {
+        sitesById.set(site.id, site);
+        const marker = L.circleMarker([site.latitude, site.longitude], {
+          radius: site.current ? 6 : 5,
+          color: "#ffffff",
+          weight: 1.5,
+          fillColor: site.current ? "#28684d" : "#7d8c83",
+          fillOpacity: 0.96
+        });
+        marker.on("click", function () { selectSite(site.id); });
+        markersById.set(site.id, marker);
+        marker.addTo(site.current ? currentLayer : historicalLayer);
+      });
+
+      map.fitBounds(basinBounds, { padding: [18, 18] });
+      historicalToggle.disabled = false;
+      historicalToggle.addEventListener("change", function () {
+        if (historicalToggle.checked) {
+          historicalLayer.addTo(map);
+        } else {
+          map.removeLayer(historicalLayer);
+          if (selectedSiteId && sitesById.has(selectedSiteId) && !sitesById.get(selectedSiteId).current) {
+            selectedSiteId = null;
+            clearSelectedDetails();
+          }
+        }
+        renderStationList();
+      });
+      stationList.addEventListener("click", function (event) {
+        const button = event.target.closest("[data-site-id]");
+        if (button) selectSite(button.dataset.siteId);
+      });
+      renderStationList();
+
+      if (!allSites.length) {
+        showStatus("The HUC 1601 boundary loaded, but no USGS stream sites were found inside it.", true);
+        return;
+      }
+      serviceStatus.hidden = true;
+      mapMessage.hidden = true;
+    }
+
+    try {
+      initializeMap();
+      loadBasinAndGages().catch(function (error) {
+        showGageLoadError("Live basin and gage data could not be loaded. ", error);
+      });
+    } catch (error) {
+      showGageLoadError("The interactive map could not be started. ", error);
+    }
+  </script>
+</body>
+</html>
